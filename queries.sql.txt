@@ -1,0 +1,4 @@
+SELECT COUNT(*) AS customers_count
+FROM customers; 
+
+// La consulta cuenta el numero de clientes registrados para la tabla customers

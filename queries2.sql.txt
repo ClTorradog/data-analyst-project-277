@@ -1,0 +1,73 @@
+Para el reporte 1 (age_groups)
+
+WITH categorized AS ( //Iniciamos primeramente con una CTE para procesar los datos durante la consulta
+    SELECT
+        CASE
+            WHEN age BETWEEN 16 AND 25 THEN '16-25'
+            WHEN age BETWEEN 26 AND 40 THEN '26-40'
+            ELSE '40+'
+
+			// Aplicamos el When para crear el filtro de las edades solicitadas
+        END AS age_category
+    FROM customers //Para este caso solo usaremos la tabla customers
+)
+SELECT
+    age_category,
+    COUNT(*) AS age_count //Realizamos el conteo de las edades que ya para esta parte de la consulta las divide según 				los filtros creados
+
+FROM categorized //Llamamos a la CTE
+GROUP BY age_category // Agrupamos por la categoría de edad
+ORDER BY
+    CASE age_category
+        WHEN '16-25' THEN 1
+        WHEN '26-40' THEN 2
+        WHEN '40+'   THEN 3
+
+		//Ordenamos según la categoría de edad según el orden que solicitamos con el when
+    END; //Finaliza el Case
+
+------------------------------------------------------------------------------------------------------------------
+Para el reporte 2 (customers_by_month)
+
+SELECT
+    TO_CHAR(s.sale_date, 'YYYY-MM')      AS selling_month, //Cambia el formato de la fecha por Año-Mes
+    COUNT(DISTINCT s.customer_id)         AS total_customers, //Contar los clientes unicos, aplicamos el DISTINTCT 								para evitar los duplicados
+
+    ROUND(SUM(s.quantity * p.price))      AS income //Redondeamos la formula de la cantidad * precio para encontrar 							el income
+
+FROM sales s
+JOIN products p ON s.product_id = p.product_id //Aplicamos un JOIN para conectar las tablas sales y products
+GROUP BY TO_CHAR(s.sale_date, 'YYYY-MM') // Agrupamos el resultado por mes para que el count funcione mes a mes
+ORDER BY selling_month ASC; //Ordenamos de menor a mayor segun el mes de la venta
+
+--------------------------------------------------------------------------------------------------------------------
+Para el reporte 3 (special_offer)
+
+//Aplicamos una CTE para obtener la fecha de la primera compra de cada cliente
+
+WITH primera_compra AS (
+    SELECT
+        customer_id,
+        MIN(sale_date) AS first_purchase_date
+    FROM sales
+    GROUP BY customer_id
+)
+SELECT
+    c.first_name || ' ' || c.last_name AS customer, //Concatenamos para obtener el nombre y apellido del cliente
+    pc.first_purchase_date             AS sale_date, //Llamamos al valor del CTE y lo nombrabos como sale_date
+    e.first_name || ' ' || e.last_name AS seller //Concatenamos para obtener el nombre y apellido del vendedor
+
+FROM primera_compra pc //Llamamos al a subconsulta de la CTE
+JOIN sales s
+    ON s.customer_id = pc.customer_id
+    AND s.sale_date  = pc.first_purchase_date
+JOIN products  p ON s.product_id      = p.product_id
+JOIN customers c ON s.customer_id     = c.customer_id
+JOIN employees e ON s.sales_person_id = e.employee_id
+
+// Aplicamos un Join sobre las 4 tablas para obtener los valores solicitados
+
+WHERE p.price = 0 //Aplicamos la condición solicitada
+ORDER BY c.customer_id ASC; //Ordenamos por el c.customerid de menor a mayor
+
+

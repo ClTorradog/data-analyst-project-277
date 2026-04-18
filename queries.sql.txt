@@ -1,4 +1,61 @@
-SELECT COUNT(*) AS customers_count
-FROM customers; 
+Para top_10_total_income (Reporte 1)
 
-// La consulta cuenta el numero de clientes registrados para la tabla customers
+SELECT
+    e.first_name || ' ' || e.last_name AS seller, //Concatenamos el primer nombre y el apellido del empleado
+    COUNT(s.sales_id)                  AS operations, //Contamos las ventas por el id como las operaciones realizadas
+    ROUND(SUM(s.quantity * p.price))   AS income // Redondeamos y sumamos la cantidad por el precio del producto por la cantidad solicitada en las ventas
+ 
+FROM sales s
+JOIN employees e ON s.sales_person_id = e.employee_id
+JOIN products  p ON s.product_id      = p.product_id
+
+// Realizamos un join para conectar las 3 tablas que en este caso serian sales, employees y products
+
+GROUP BY e.employee_id, e.first_name, e.last_name // agrupamos por el empleado id y sus nombres
+ORDER BY income DESC // Ordenamos por income de mayor a menor
+LIMIT 10; // Limitamos la query a los 10 primeros valores, para este caso seria el top 10
+
+----------------------------------------------------------------------------------------
+Para lowest_average_income (Reporte 2)
+
+SELECT
+    e.first_name || ' ' || e.last_name   AS seller, //Concatenamos el primer nombre y el apellido del empleado
+    ROUND(AVG(s.quantity * p.price))     AS average_income //Calculamos el promedio usando la cantidad por el precio
+FROM sales s
+JOIN employees e ON s.sales_person_id = e.employee_id
+JOIN products  p ON s.product_id      = p.product_id
+
+// Realizamos un join para conectar las 3 tablas que en este caso serian sales, employees y products
+
+GROUP BY e.employee_id, e.first_name, e.last_name // agrupamos por el empleado id y sus nombres
+HAVING AVG(s.quantity * p.price) < (
+    SELECT AVG(s2.quantity * p2.price)
+    FROM sales s2
+    JOIN products p2 ON s2.product_id = p2.product_id
+)
+
+// Realizamos una subconsulta para calcular el promedio general de todos los vendedores y se compara para ser menor al promedio
+
+ORDER BY average_income ASC; //Ordenamos por el promedio de vendedores de menor a mayor
+
+---------------------------------------------------------------------------------------------------------------------
+Para day_of_the_week_income (Reporte 3)
+
+SELECT
+    e.first_name || ' ' || e.last_name          AS seller, //Concatenamos el primer nombre y el apellido del empleado
+    LOWER(TO_CHAR(s.sale_date, 'Day'))           AS day_of_week, //Extraemos el dia de la semana aplicando TO_CHAR para convertir la fecha en ingles
+
+    ROUND(SUM(s.quantity * p.price))             AS income // Redondeamos y sumamos la cantidad por el precio del producto por la cantidad solicitada en las ventas
+
+FROM sales s
+JOIN employees e ON s.sales_person_id = e.employee_id
+JOIN products  p ON s.product_id      = p.product_id
+
+// Realizamos un join para conectar las 3 tablas que en este caso serian sales, employees y products
+
+GROUP BY e.employee_id, e.first_name, e.last_name, day_of_week,
+         EXTRACT(DOW FROM s.sale_date) // Para este reporte agrupamos por el vendedor y el dia aplicando el extract para sacar la fecha en ingles en el resultado
+
+ORDER BY
+    EXTRACT(DOW FROM s.sale_date) ASC,
+    seller ASC; //Aplicamos el order by para ordenar correctamente los días según el dia y el vendedor
